@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   OPÉRA DIGITAL HUB DESIGN SYSTEM & THEME TOKENS
+   Pure White & Gold Light Mode + Pure Black & Gold Dark Mode
+   ========================================================================== */
+
+@layer base {
+  :root {
+    /* 1. Primary & Gold Brand Theme Tokens */
+    --primary: 40 48% 56%; /* Metallic Gold #C5A059 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 25% 95%;
+    --secondary-foreground: 0 0% 15%;
+    --accent: 40 48% 56%;
+    --accent-foreground: 0 0% 100%;
+
+    /* 2. Crisp Pure White Base Surfaces & Layout Containers */
+    --background: 0 0% 100%; /* Pure White Surface #FFFFFF */
+    --foreground: 0 0% 8%;
+    --card: 0 0% 100%; /* Pure White Card Surfaces */
+    --card-foreground: 0 0% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 8%;
+
+    /* 3. Muted & Destructive Feedback States */
+    --muted: 240 5% 96%;
+    --muted-foreground: 0 0% 45%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* 4. Borders, Inputs & Focus Rings */
+    --border: 240 5% 90%;
+    --input: 240 5% 90%;
+    --ring: 40 48% 56%;
+    --radius: 0.25rem;
+  }
+
+  .dark {
+    /* 1. Primary & Gold Brand Theme Tokens */
+    --primary: 40 48% 56%; /* Metallic Gold #C5A059 */
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 13%;
+    --secondary-foreground: 0 0% 98%;
+    --accent: 40 48% 56%;
+    --accent-foreground: 0 0% 98%;
+
+    /* 2. Dark Base Surfaces & Layout Containers */
+    --background: 0 0% 5%; /* Deep Black Surface #0D0D0D */
+    --foreground: 0 0% 98%;
+    --card: 0 0% 9%; /* Dark Matte Card #161616 */
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 98%;
+
+    /* 3. Muted & Destructive Feedback States */
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 63%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* 4. Borders, Inputs & Focus Rings */
+    --border: 0 0% 16%; /* Border #292929 */
+    --input: 0 0% 16%;
+    --ring: 40 48% 56%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/30 selection:text-primary;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .primary-glow {
+    box-shadow: 0 0 25px rgba(197, 160, 89, 0.25);
+  }
+
+  .gold-gradient-text {
+    background: linear-gradient(135deg, #E6CA85 0%, #C5A059 50%, #9E7B3B 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
