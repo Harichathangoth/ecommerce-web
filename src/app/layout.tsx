@@ -60,6 +60,16 @@ export const metadata: Metadata = {
     description: 'Enterprise multi-branch electronics store.',
     images: ['/og-banner.png'],
   },
+  icons: {
+    icon: [
+      { url: '/logo.png', type: 'image/png' },
+      { url: '/icon.png', type: 'image/png' },
+    ],
+    shortcut: ['/logo.png'],
+    apple: [
+      { url: '/logo.png', type: 'image/png' },
+    ],
+  },
 };
 
 import { Toaster } from '@/components/ui/toast';

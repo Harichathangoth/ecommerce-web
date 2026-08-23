@@ -18,6 +18,14 @@ export interface ProductItem {
   image: string;
 }
 
+export interface UserSession {
+  id: string;
+  fullName: string;
+  email: string;
+  role?: any;
+  branchId?: string | null;
+}
+
 interface CartState {
   items: CartItem[];
 }
@@ -32,9 +40,22 @@ interface BranchState {
 }
 
 interface AuthState {
-  user: { id: string; name: string; email: string; role: string } | null;
+  user: UserSession | null;
   token: string | null;
+  isAuthenticated: boolean;
 }
+
+const getSavedUser = (): UserSession | null => {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem('auth_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
 
 const initialCartState: CartState = {
   items: [
@@ -53,14 +74,6 @@ const initialCartState: CartState = {
       price: 1199,
       quantity: 1,
       image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=400',
-    },
-    {
-      id: 'var-3',
-      name: 'AirPods Pro (2nd Gen)',
-      specs: 'White',
-      price: 249,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&q=80&w=400',
     },
   ],
 };
@@ -93,48 +106,7 @@ const cartSlice = createSlice({
 });
 
 const initialWishlistState: WishlistState = {
-  items: [
-    {
-      id: 'var-1',
-      name: 'iPhone 15 Pro Max',
-      specs: '256GB, Natural Titanium',
-      price: 1099,
-      inStock: true,
-      image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&q=80&w=400',
-    },
-    {
-      id: 'var-2',
-      name: 'MacBook Air M3',
-      specs: '13-inch, 256GB SSD',
-      price: 1199,
-      inStock: true,
-      image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=400',
-    },
-    {
-      id: 'var-3',
-      name: 'AirPods Pro (2nd Gen)',
-      specs: 'White',
-      price: 249,
-      inStock: true,
-      image: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&q=80&w=400',
-    },
-    {
-      id: 'var-4',
-      name: 'Apple Watch Series 9',
-      specs: 'Starlight, 41mm',
-      price: 299,
-      inStock: true,
-      image: 'https://images.unsplash.com/photo-1434493789847-2f02dc6ca35d?auto=format&fit=crop&q=80&w=400',
-    },
-    {
-      id: 'var-5',
-      name: 'Samsung Galaxy S24 Ultra',
-      specs: '12GB RAM, 256GB Storage',
-      price: 1049,
-      inStock: true,
-      image: 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&q=80&w=400',
-    },
-  ],
+  items: [],
 };
 
 const wishlistSlice = createSlice({
@@ -157,7 +129,7 @@ const wishlistSlice = createSlice({
 
 const branchSlice = createSlice({
   name: 'branch',
-  initialState: { selectedBranchId: 'br-nyc-01', branchName: 'New York Main Store' } as BranchState,
+  initialState: { selectedBranchId: 'br-hq-01', branchName: 'Main Headquarters (HQ-01)' } as BranchState,
   reducers: {
     setSelectedBranch: (state, action: PayloadAction<{ id: string; name: string }>) => {
       state.selectedBranchId = action.payload.id;
@@ -166,17 +138,31 @@ const branchSlice = createSlice({
   },
 });
 
+const initialUser = getSavedUser();
+
 const authSlice = createSlice({
   name: 'auth',
-  initialState: { user: null, token: null } as AuthState,
+  initialState: {
+    user: initialUser,
+    token: null,
+    isAuthenticated: !!initialUser,
+  } as AuthState,
   reducers: {
-    setCredentials: (state, action: PayloadAction<{ user: any; token: string }>) => {
+    setCredentials: (state, action: PayloadAction<{ user: UserSession; token?: string }>) => {
       state.user = action.payload.user;
-      state.token = action.payload.token;
+      state.token = action.payload.token || null;
+      state.isAuthenticated = true;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('auth_user', JSON.stringify(action.payload.user));
+      }
     },
     logout: (state) => {
       state.user = null;
       state.token = null;
+      state.isAuthenticated = false;
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('auth_user');
+      }
     },
   },
 });

@@ -4,11 +4,23 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { CATEGORIES } from '@/data/mock-store-data';
+import { useActiveCategoriesQuery } from '@/modules/categories';
 
 export function CategoryGridSection() {
+  const { data: apiCategories } = useActiveCategoriesQuery();
+
+  const categoriesList =
+    apiCategories && apiCategories.length > 0
+      ? apiCategories.map((c) => ({
+          name: c.name,
+          href: `/category/${c.slug}`,
+          image: c.imageUrl || '/cat/mobiles.png',
+        }))
+      : CATEGORIES;
+
   return (
     <section className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
-      {CATEGORIES.map((cat) => (
+      {categoriesList.map((cat) => (
         <Link
           key={cat.name}
           href={cat.href}

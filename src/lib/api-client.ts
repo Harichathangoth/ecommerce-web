@@ -1,42 +1,35 @@
-import { API_BASE_URL } from '@/lib/constants/api-endpoints';
-
-export interface ApiFieldError {
-  field: string;
-  message: string;
-}
+import { API_BASE_URL, API_ENDPOINTS } from '@/lib/constants/api-endpoints';
 
 export class CustomApiError extends Error {
   statusCode: number;
   errorCode?: string;
-  fieldErrors?: ApiFieldError[];
 
-  constructor(message: string, statusCode: number, errorCode?: string, fieldErrors?: ApiFieldError[]) {
+  constructor(message: string, statusCode: number, errorCode?: string) {
     super(message);
     this.statusCode = statusCode;
     this.errorCode = errorCode;
-    this.fieldErrors = fieldErrors;
   }
 }
 
 export interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
+  _retry?: boolean;
 }
 
-async function request<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
-  const { params, headers, ...customConfig } = options;
+async function browserRequest<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
+  const { params, headers, _retry, ...customConfig } = options;
 
-  let url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+  let url = endpoint.startsWith('http')
+    ? endpoint
+    : `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+
   if (params) {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        searchParams.append(key, String(value));
-      }
+      if (value !== undefined && value !== null) searchParams.append(key, String(value));
     });
     const queryString = searchParams.toString();
-    if (queryString) {
-      url += (url.includes('?') ? '&' : '?') + queryString;
-    }
+    if (queryString) url += (url.includes('?') ? '&' : '?') + queryString;
   }
 
   const config: RequestInit = {
@@ -45,48 +38,51 @@ async function request<T>(endpoint: string, options: FetchOptions = {}): Promise
       'Content-Type': 'application/json',
       ...headers,
     },
-    credentials: 'include', // Sends & receives HTTP-Only Cookies natively
+    credentials: 'include', // Automatically sends HTTP-Only JWT Cookie with every request
     ...customConfig,
   };
 
   const response = await fetch(url, config);
+
+  // Handle 401 Unauthorized: Attempt silent token refresh via HTTP-Only cookie & retry
+  if (response.status === 401 && !_retry && !endpoint.includes('/auth/')) {
+    try {
+      const refreshRes = await fetch(`${API_BASE_URL}${API_ENDPOINTS.AUTH.REFRESH}`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (refreshRes.ok) {
+        return await browserRequest<T>(endpoint, { ...options, _retry: true });
+      }
+    } catch {
+      // Refresh request failed
+    }
+
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin') && !window.location.pathname.startsWith('/admin/login')) {
+      window.location.href = '/admin/login';
+    }
+  }
+
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const statusCode = response.status;
-    const message = data?.message || response.statusText || 'An unexpected server error occurred';
-    const errorCode = data?.errorCode;
-    const fieldErrors = data?.errors;
-
-    // Handle 401 Unauthorized: Redirect to login if on admin route
-    if (statusCode === 401 && typeof window !== 'undefined') {
-      if (window.location.pathname.startsWith('/admin')) {
-        window.location.href = '/admin';
-      }
-    }
-
-    throw new CustomApiError(message, statusCode, errorCode, fieldErrors);
+    const message = data?.message || response.statusText || 'An unexpected error occurred';
+    throw new CustomApiError(message, response.status, data?.errorCode);
   }
 
-  // Unbox standard response envelope ({ success: true, data: T })
-  if (data && typeof data === 'object' && 'data' in data) {
-    return data.data as T;
-  }
-
-  return data as T;
+  return (data && typeof data === 'object' && 'data' in data ? data.data : data) as T;
 }
 
 export const apiClient = {
   get: <T>(endpoint: string, options?: FetchOptions) =>
-    request<T>(endpoint, { ...options, method: 'GET' }),
+    browserRequest<T>(endpoint, { ...options, method: 'GET' }),
   post: <T>(endpoint: string, body?: any, options?: FetchOptions) =>
-    request<T>(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) }),
+    browserRequest<T>(endpoint, { ...options, method: 'POST', body: JSON.stringify(body ?? {}) }),
   put: <T>(endpoint: string, body?: any, options?: FetchOptions) =>
-    request<T>(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+    browserRequest<T>(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body ?? {}) }),
+  patch: <T>(endpoint: string, body?: any, options?: FetchOptions) =>
+    browserRequest<T>(endpoint, { ...options, method: 'PATCH', body: JSON.stringify(body ?? {}) }),
   delete: <T>(endpoint: string, options?: FetchOptions) =>
-    request<T>(endpoint, { ...options, method: 'DELETE' }),
-
-  // HTTP QUERY Method Helper
-  query: <T>(endpoint: string, body?: any, options?: FetchOptions) =>
-    request<T>(endpoint, { ...options, method: 'QUERY', body: JSON.stringify(body) }),
+    browserRequest<T>(endpoint, { ...options, method: 'DELETE' }),
 };
